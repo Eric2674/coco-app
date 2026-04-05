@@ -2,7 +2,7 @@
   "name": "코코 가족앱",
   "short_name": "코코",
   "description": "우리 가족 모두 함께 코코를 돌봐요",
-  "start_url": "/coco-app/",
+  "start_url": "/coco-app/index.html",
   "scope": "/coco-app/",
   "display": "standalone",
   "background_color": "#FDF6EE",
@@ -16,18 +16,5 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-  "share_target": {
-    "action": "/coco-app/share-target",
-    "method": "POST",
-    "enctype": "multipart/form-data",
-    "params": {
-      "files": [
-        {
-          "name": "file",
-          "accept": ["image/jpeg", "image/png", "image/gif", "image/webp", "image/*"]
-        }
-      ]
-    }
-  }
+  ]
 }
