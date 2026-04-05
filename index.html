@@ -650,15 +650,6 @@ function renderMeals(){
     </div>`;
   }).join("");
 }
-function renderMeals(){
-  const el=document.getElementById("meal-list");
-  if(el)el.innerHTML=meals.length===0?E("🍚","오늘 아직 밥을 안 줬어요!"):meals.map(t=>{
-    const time=new Date(t.given_at).toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"});
-    const init=(t.given_by||"?").charAt(0),isMe=t.given_by===currentUser;
-    return `<div class="treat-log-item"><div class="treat-avatar" style="background:#C5DBC4">${init}</div><div class="treat-info"><div class="treat-giver">${t.given_by}${isMe?' <span style="font-size:11px;color:#6E9A6D">(나)</span>':''}</div><div class="treat-meta">🍚 밥${t.notes?" · "+t.notes:""}</div></div><div class="treat-time">${time}</div>${isMe?`<button class="icon-btn" onclick="delTreat('${t.id}')">🗑</button>`:""}</div>`;
-  }).join("");
-}
-
 async function quickMeal(){
   const{error}=await sb.from("coco_treats").insert({given_by:currentUser,given_at:new Date().toISOString(),treat_type:"밥",notes:null});
   if(error){showToast("저장 실패 😢");return;}
