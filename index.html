@@ -800,6 +800,8 @@ async function saveProfile(){
     photoUrl=await fileToBase64(pendingFile);
   } else if(typeof pendingFile==="string"&&pendingFile.startsWith("data:")){
     photoUrl=pendingFile;
+  } else if(typeof pendingFile==="string"&&pendingFile.startsWith("http")){
+    photoUrl=pendingFile; // imgur 등 직접 URL
   }
   const weight=document.getElementById("p-weight").value;
   const updates={id:1,name:document.getElementById("p-name").value.trim()||"코코",breed:document.getElementById("p-breed").value.trim()||"브리티시 롱헤어",gender:selectedGender,birthday:document.getElementById("p-birthday").value||"2022-01-01",photo_url:photoUrl,updated_at:new Date().toISOString()};
