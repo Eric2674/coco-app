@@ -438,15 +438,38 @@ window.addEventListener("DOMContentLoaded",()=>{
     el.addEventListener("click",e=>{if(e.target===el)closeModals();});
   });
 
-  // 앨범 직접 선택 미리보기 (change 이벤트 - 이건 모달 밖이라 작동할 수도 있음)
+  // 앨범 직접 선택 - 선택 즉시 파일 읽어서 저장
   const _albumDirect=document.getElementById("album-file-direct");
   if(_albumDirect){
     _albumDirect.onchange=function(){
       if(!this.files||!this.files[0])return;
-      const url=URL.createObjectURL(this.files[0]);
-      const preview=document.getElementById("album-preview-img");
-      const wrap=document.getElementById("album-preview-wrap");
-      if(preview&&wrap){preview.src=url;wrap.style.display="block";}
+      const file=this.files[0];
+      // 즉시 FileReader로 읽어서 dataURL로 저장
+      const reader=new FileReader();
+      reader.onloadend=function(){
+        const img=new Image();
+        img.onload=function(){
+          // 압축
+          const canvas=document.createElement("canvas");
+          let w=img.width, h=img.height;
+          const MAX=600;
+          if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}
+          else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
+          canvas.width=w;canvas.height=h;
+          canvas.getContext("2d").drawImage(img,0,0,w,h);
+          // 저장
+          pendingFile=canvas.toDataURL("image/jpeg",0.7);
+          // 미리보기
+          const preview=document.getElementById("album-preview-img");
+          const wrap=document.getElementById("album-preview-wrap");
+          if(preview&&wrap){preview.src=pendingFile;wrap.style.display="block";}
+          showToast("✓ 사진 선택됨!");
+        };
+        img.onerror=function(){showToast("이미지 형식 오류 😢");};
+        img.src=reader.result;
+      };
+      reader.onerror=function(){showToast("파일 읽기 실패 😢");};
+      reader.readAsDataURL(file);
     };
   }
 });
@@ -728,53 +751,62 @@ async function openAlbumPicker(){
 function applyProfileDirect(){
   const input=document.getElementById("profile-file-direct");
   if(!input||!input.files||input.files.length===0){
-    showToast("먼저 위에서 파일을 선택해주세요 👆");return;
-  }
-  const file=input.files[0];
-  pendingFile=file;
-  const url=URL.createObjectURL(file);
-  const img=document.getElementById("profile-edit-img");
-  img.src=url;img.style.display="block";
-  const ph=document.getElementById("profile-edit-placeholder");
-  if(ph)ph.style.display="none";
-  const msg=document.getElementById("photo-selected-msg");
-  if(msg)msg.style.display="block";
-  showToast("사진 적용됨 ✓ 저장하기를 눌러주세요");
-}
-
-async function uploadDirect(){
-  const input=document.getElementById("album-file-direct");
-  if(!input||!input.files||input.files.length===0){
     showToast("먼저 파일을 선택해주세요 👆");return;
   }
   const file=input.files[0];
+  const reader=new FileReader();
+  reader.onloadend=function(){
+    const img=new Image();
+    img.onload=function(){
+      const canvas=document.createElement("canvas");
+      let w=img.width, h=img.height;
+      const MAX=400;
+      if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}
+      else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
+      canvas.width=w;canvas.height=h;
+      canvas.getContext("2d").drawImage(img,0,0,w,h);
+      pendingFile=canvas.toDataURL("image/jpeg",0.7);
+      const pimg=document.getElementById("profile-edit-img");
+      pimg.src=pendingFile;pimg.style.display="block";
+      document.getElementById("profile-edit-placeholder").style.display="none";
+      document.getElementById("photo-selected-msg").style.display="block";
+      showToast("사진 적용됨 ✓ 저장하기를 눌러주세요");
+    };
+    img.src=reader.result;
+  };
+  reader.onerror=function(){showToast("파일 읽기 실패 😢");};
+  reader.readAsDataURL(file);
+}
+
+async function uploadDirect(){
+  if(!pendingFile){
+    showToast("먼저 파일을 선택해주세요 👆");return;
+  }
   const caption=document.getElementById("album-caption-direct").value.trim();
   const prog=document.getElementById("upload-progress");
   prog.style.display="block";
-  prog.textContent="📤 사진 압축 중...";
+  prog.textContent="📤 저장 중...";
   try{
-    // 600px, 60% 품질로 강하게 압축
-    const photoData=await compressImage(file,600,0.6);
-    prog.textContent="📤 저장 중...";
-    const{data,error}=await sb.from("coco_album").insert({
-      photo_url:photoData,
+    // pendingFile은 이미 압축된 dataURL
+    const{error}=await sb.from("coco_album").insert({
+      photo_url:pendingFile,
       caption:caption||null,
       uploaded_by:currentUser
     });
     prog.style.display="none";
     if(error){
-      showToast("저장 실패: "+(error.message||error.code||JSON.stringify(error)));
+      showToast("저장 실패: "+(error.message||JSON.stringify(error)));
       return;
     }
     document.getElementById("album-preview-wrap").style.display="none";
     document.getElementById("album-caption-direct").value="";
-    input.value="";
+    document.getElementById("album-file-direct").value="";
+    pendingFile=null;
     showToast("📸 앨범에 추가됐어요!");
     await loadAlbum();
   }catch(e){
     prog.style.display="none";
     showToast("오류: "+(e&&e.message?e.message:String(e)));
-    console.error("uploadDirect error:",e);
   }
 }
 
