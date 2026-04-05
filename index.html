@@ -750,11 +750,15 @@ async function uploadDirect(){
   const file=input.files[0];
   const caption=document.getElementById("album-caption-direct").value.trim();
   document.getElementById("upload-progress").style.display="block";
-  const photoData=await fileToBase64(file);
+  let photoData;
+  try{
+    photoData=await compressImage(file,800,0.8);
+  }catch(e){
+    photoData=await fileToBase64(file);
+  }
   const{error}=await sb.from("coco_album").insert({photo_url:photoData,caption:caption||null,uploaded_by:currentUser});
   document.getElementById("upload-progress").style.display="none";
   if(error){showToast("저장 실패 😢 "+error.message);return;}
-  // 미리보기 초기화
   document.getElementById("album-preview-wrap").style.display="none";
   document.getElementById("album-caption-direct").value="";
   input.value="";
@@ -833,12 +837,14 @@ function selGender(g,btn){
 async function saveProfile(){
   let photoUrl=profile.photo_url;
   if(pendingFile instanceof File){
-    showToast("저장 중...");
-    photoUrl=await fileToBase64(pendingFile);
-  } else if(typeof pendingFile==="string"&&pendingFile.startsWith("data:")){
+    showToast("사진 압축 중...");
+    try{
+      photoUrl=await compressImage(pendingFile,400,0.7);
+    }catch(e){
+      showToast("사진 처리 오류 😢");return;
+    }
+  } else if(typeof pendingFile==="string"&&(pendingFile.startsWith("data:")||pendingFile.startsWith("http"))){
     photoUrl=pendingFile;
-  } else if(typeof pendingFile==="string"&&pendingFile.startsWith("http")){
-    photoUrl=pendingFile; // imgur 등 직접 URL
   }
   const weight=document.getElementById("p-weight").value;
   const updates={id:1,name:document.getElementById("p-name").value.trim()||"코코",breed:document.getElementById("p-breed").value.trim()||"브리티시 롱헤어",gender:selectedGender,birthday:document.getElementById("p-birthday").value||"2022-01-01",photo_url:photoUrl,updated_at:new Date().toISOString()};
@@ -848,6 +854,29 @@ async function saveProfile(){
   if(weight){await sb.from("coco_health").insert({recorded_date:new Date().toISOString().split("T")[0],weight:parseFloat(weight),health_status:"좋음",recorded_by:currentUser,notes:"프로필에서 입력"});await loadHealth();}
   pendingFile=null;
   renderProfile();closeModals();showToast("✅ 프로필 저장 완료!");
+}
+
+// 이미지 압축 함수
+function compressImage(file, maxSize, quality){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onerror=reject;
+    reader.onload=function(e){
+      const img=new Image();
+      img.onerror=reject;
+      img.onload=function(){
+        const canvas=document.createElement("canvas");
+        let w=img.width, h=img.height;
+        if(w>h){if(w>maxSize){h=Math.round(h*maxSize/w);w=maxSize;}}
+        else{if(h>maxSize){w=Math.round(w*maxSize/h);h=maxSize;}}
+        canvas.width=w; canvas.height=h;
+        canvas.getContext("2d").drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL("image/jpeg",quality));
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 function uploadPhoto(input){}
