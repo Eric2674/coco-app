@@ -221,7 +221,7 @@
     <button onclick="quickMeal()" style="width:100%;padding:16px;background:linear-gradient(135deg,#8BAE8A,#6E9A6D);color:white;border:none;border-radius:18px;font-family:'Nunito',sans-serif;font-size:18px;font-weight:900;cursor:pointer;box-shadow:0 6px 20px rgba(139,174,138,.4);margin-bottom:20px;display:flex;align-items:center;justify-content:center;gap:8px">
       🍚 밥 줬어요!
     </button>
-    <div class="card"><div class="card-title">오늘 밥 기록</div><div id="meal-list"><div class="loading">불러오는 중...</div></div></div>
+    <div class="card"><div class="card-title">밥 기록 (최근 2주)</div><div id="meal-list"><div class="loading">불러오는 중...</div></div></div>
 
     <!-- 간식 섹션 -->
     <div style="text-align:center;padding:16px 0 4px">
@@ -231,7 +231,7 @@
     </div>
     <div id="treat-warning" style="display:none" class="treat-warning">⚠️ <span id="treat-warning-text"></span></div>
     <button class="give-treat-btn" onclick="openTreatModal()">🍪 간식 줬어요!</button>
-    <div class="card"><div class="card-title">오늘의 간식 기록</div><div id="treat-list"><div class="loading">불러오는 중...</div></div></div>
+    <div class="card"><div class="card-title">간식 기록 (최근 2주)</div><div id="treat-list"><div class="loading">불러오는 중...</div></div></div>
   </div>
 
   <!-- 앨범 -->
@@ -520,8 +520,16 @@ async function loadProfile(){
 }
 
 async function loadTreats(){
-  const today=new Date().toISOString().split("T")[0];
-  const{data}=await sb.from("coco_treats").select("*").gte("given_at",today+"T00:00:00").order("given_at",{ascending:false});
+  // 2주 전 날짜
+  const twoWeeksAgo=new Date();
+  twoWeeksAgo.setDate(twoWeeksAgo.getDate()-14);
+  const twoWeeksAgoStr=twoWeeksAgo.toISOString();
+
+  // 2주 이상 된 기록 자동 삭제
+  await sb.from("coco_treats").delete().lt("given_at",twoWeeksAgoStr);
+
+  // 2주치 로드
+  const{data}=await sb.from("coco_treats").select("*").gte("given_at",twoWeeksAgoStr).order("given_at",{ascending:false});
   const all=data||[];
   meals=all.filter(t=>t.treat_type==="밥");
   treats=all.filter(t=>t.treat_type!=="밥");
@@ -567,20 +575,46 @@ function renderProfile(){
 }
 
 function updateHome(){
-  document.getElementById("today-meal-count").textContent=meals.length;
-  document.getElementById("today-treat-count").textContent=treats.length;
+  const today=new Date().toISOString().split("T")[0];
+  const todayMeals=meals.filter(t=>t.given_at.startsWith(today));
+  const todayTreats=treats.filter(t=>t.given_at.startsWith(today));
+  document.getElementById("today-meal-count").textContent=todayMeals.length;
+  document.getElementById("today-treat-count").textContent=todayTreats.length;
   if(events.length>0){
     const e=events[0],diff=Math.ceil((new Date(e.event_date+"T00:00:00")-new Date())/86400000);
   }
-  document.getElementById("home-meal-list").innerHTML=meals.length===0?E("🌙","오늘 아직 밥을 안 줬어요"):meals.slice(0,3).map(tH).join("");
-  document.getElementById("home-treat-list").innerHTML=treats.length===0?E("🌙","오늘 아직 간식을 안 줬어요"):treats.slice(0,3).map(tH).join("");
+  document.getElementById("home-meal-list").innerHTML=todayMeals.length===0?E("🌙","오늘 아직 밥을 안 줬어요"):todayMeals.slice(0,3).map(t=>{
+    const time=new Date(t.given_at).toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"});
+    const init=(t.given_by||"?").charAt(0);
+    return `<div class="treat-log-item"><div class="treat-avatar" style="background:#C5DBC4;color:#4A7A49">${init}</div><div class="treat-info"><div class="treat-giver">${t.given_by}</div><div class="treat-meta">🍚 밥</div></div><div class="treat-time">${time}</div></div>`;
+  }).join("");
+  document.getElementById("home-treat-list").innerHTML=todayTreats.length===0?E("🌙","오늘 아직 간식을 안 줬어요"):todayTreats.slice(0,3).map(t=>{
+    const time=new Date(t.given_at).toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"});
+    const init=(t.given_by||"?").charAt(0);
+    return `<div class="treat-log-item"><div class="treat-avatar">${init}</div><div class="treat-info"><div class="treat-giver">${t.given_by}</div><div class="treat-meta">${t.treat_type||"트릿"}</div></div><div class="treat-time">${time}</div></div>`;
+  }).join("");
   document.getElementById("home-event-list").innerHTML=events.length===0?E("📭","예정된 일정이 없어요"):events.slice(0,3).map(e=>eH(e,true)).join("");
 }
 
 function tH(t){
-  const time=new Date(t.given_at).toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"});
+  const dt=new Date(t.given_at);
+  const today=new Date().toISOString().split("T")[0];
+  const recDate=dt.toISOString().split("T")[0];
+  const isToday=recDate===today;
+  const dateStr=isToday?"오늘":dt.toLocaleDateString("ko-KR",{month:"short",day:"numeric",weekday:"short"});
+  const timeStr=dt.toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"});
   const init=(t.given_by||"?").charAt(0),isMe=t.given_by===currentUser;
-  return `<div class="treat-log-item"><div class="treat-avatar">${init}</div><div class="treat-info"><div class="treat-giver">${t.given_by}${isMe?' <span style="font-size:11px;color:var(--coral)">(나)</span>':''}</div><div class="treat-meta">${t.treat_type||"일반간식"}${t.notes?" · "+t.notes:""}</div></div><div class="treat-time">${time}</div>${isMe?`<button class="icon-btn" onclick="delTreat('${t.id}')">🗑</button>`:""}</div>`;
+  return `<div class="treat-log-item">
+    <div class="treat-avatar">${init}</div>
+    <div class="treat-info">
+      <div class="treat-giver">${t.given_by}${isMe?' <span style="font-size:11px;color:var(--coral)">(나)</span>':''}</div>
+      <div class="treat-meta">${t.treat_type||"트릿"}${t.notes?" · "+t.notes:""}</div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <div class="treat-time">${timeStr}</div>
+      <div style="font-size:10px;color:var(--warm-gray);margin-top:2px">${dateStr}</div>
+    </div>
+  </div>`;
 }
 
 function eH(e,compact){
@@ -592,7 +626,30 @@ function eH(e,compact){
   return `<div class="event-item"><div class="event-date-badge" style="${compact?"background:#8DAFC6":""}"><div class="event-month">${mon}</div><div class="event-day">${day}</div></div><div class="event-content"><span class="event-tag ${tc[e.event_type]||"tag-other"}">${tl[e.event_type]||"기타"}</span><div class="event-title-text">${e.title}</div>${e.notes?`<div class="event-notes-text">${e.notes}</div>`:""}<div class="event-dday">${dday}</div></div>${!compact?`<button class="icon-btn" onclick="delEvent('${e.id}')">🗑</button>`:""}</div>`;
 }
 
-function renderTreats(){document.getElementById("treat-list").innerHTML=treats.length===0?E("😊","오늘 아직 간식을 안 줬어요!"):treats.map(tH).join("");}
+function renderTreats(){document.getElementById("treat-list").innerHTML=treats.length===0?E("😊","아직 간식 기록이 없어요!"):treats.map(tH).join("");}
+function renderMeals(){
+  const el=document.getElementById("meal-list");
+  if(el)el.innerHTML=meals.length===0?E("🍚","아직 밥 기록이 없어요!"):meals.map(t=>{
+    const dt=new Date(t.given_at);
+    const today=new Date().toISOString().split("T")[0];
+    const recDate=dt.toISOString().split("T")[0];
+    const isToday=recDate===today;
+    const dateStr=isToday?"오늘":dt.toLocaleDateString("ko-KR",{month:"short",day:"numeric",weekday:"short"});
+    const timeStr=dt.toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"});
+    const init=(t.given_by||"?").charAt(0),isMe=t.given_by===currentUser;
+    return `<div class="treat-log-item">
+      <div class="treat-avatar" style="background:#C5DBC4;color:#4A7A49">${init}</div>
+      <div class="treat-info">
+        <div class="treat-giver">${t.given_by}${isMe?' <span style="font-size:11px;color:#6E9A6D">(나)</span>':''}</div>
+        <div class="treat-meta">🍚 밥${t.notes?" · "+t.notes:""}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div class="treat-time">${timeStr}</div>
+        <div style="font-size:10px;color:var(--warm-gray);margin-top:2px">${dateStr}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
 function renderMeals(){
   const el=document.getElementById("meal-list");
   if(el)el.innerHTML=meals.length===0?E("🍚","오늘 아직 밥을 안 줬어요!"):meals.map(t=>{
