@@ -164,6 +164,7 @@
 </header>
 
 <main class="main-content" id="main-content" style="display:none">
+<div id="upload-progress" style="display:none;position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:300;background:var(--coral);color:white;padding:10px 24px;border-radius:100px;font-size:14px;font-weight:700;box-shadow:0 4px 16px rgba(232,146,124,.5)">📤 저장 중...</div>
 
   <!-- 홈 -->
   <div class="tab-content active" id="tab-home">
@@ -228,7 +229,6 @@
   <!-- 앨범 -->
   <div class="tab-content" id="tab-album">
     <div class="section-header"><h2>📸 가족 앨범</h2><p>코코 사진을 올리고 함께 봐요</p></div>
-    <div id="upload-progress" style="display:none" class="upload-progress">📤 저장 중... 잠시만요</div>
 
     <!-- 파일 직접 선택 방식 -->
     <div style="background:white;border-radius:18px;padding:20px;margin-bottom:16px;border:1px solid var(--border);box-shadow:0 2px 12px var(--shadow)">
@@ -745,25 +745,37 @@ function applyProfileDirect(){
 async function uploadDirect(){
   const input=document.getElementById("album-file-direct");
   if(!input||!input.files||input.files.length===0){
-    showToast("먼저 위에서 파일을 선택해주세요 👆");return;
+    showToast("먼저 파일을 선택해주세요 👆");return;
   }
   const file=input.files[0];
   const caption=document.getElementById("album-caption-direct").value.trim();
-  document.getElementById("upload-progress").style.display="block";
-  let photoData;
+  const prog=document.getElementById("upload-progress");
+  prog.style.display="block";
+  prog.textContent="📤 사진 압축 중...";
   try{
-    photoData=await compressImage(file,800,0.8);
+    let photoData;
+    try{
+      photoData=await compressImage(file,800,0.75);
+    }catch(e){
+      photoData=await fileToBase64(file);
+    }
+    prog.textContent="📤 저장 중...";
+    const{error}=await sb.from("coco_album").insert({
+      photo_url:photoData,
+      caption:caption||null,
+      uploaded_by:currentUser
+    });
+    prog.style.display="none";
+    if(error){showToast("저장 실패 😢 "+error.message);return;}
+    document.getElementById("album-preview-wrap").style.display="none";
+    document.getElementById("album-caption-direct").value="";
+    input.value="";
+    showToast("📸 앨범에 추가됐어요!");
+    await loadAlbum();
   }catch(e){
-    photoData=await fileToBase64(file);
+    prog.style.display="none";
+    showToast("오류: "+e.message);
   }
-  const{error}=await sb.from("coco_album").insert({photo_url:photoData,caption:caption||null,uploaded_by:currentUser});
-  document.getElementById("upload-progress").style.display="none";
-  if(error){showToast("저장 실패 😢 "+error.message);return;}
-  document.getElementById("album-preview-wrap").style.display="none";
-  document.getElementById("album-caption-direct").value="";
-  input.value="";
-  showToast("📸 앨범에 추가됐어요!");
-  await loadAlbum();
 }
 
 function applyProfileUrl(){
