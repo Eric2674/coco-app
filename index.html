@@ -324,6 +324,7 @@
       </div>
     </div>
     <div class="form-group"><label class="form-label">생일</label><input type="date" class="form-input" id="p-birthday"></div>
+    <div class="form-group"><label class="form-label">🏠 처음 만난 날 (함께한 날 계산 기준)</label><input type="date" class="form-input" id="p-met-date"></div>
     <div class="form-group"><label class="form-label">몸무게 (kg)</label><input type="number" class="form-input" id="p-weight" placeholder="예: 4.5" step="0.1" min="0" max="20"></div>
     <button class="submit-btn" onclick="saveProfile()">저장하기 ✓</button>
   </div>
@@ -573,12 +574,14 @@ function renderProfile(){
   const ms=now-bday;
   const yrs=Math.floor(ms/(365.25*86400000));
   const mos=Math.floor((ms/(30.44*86400000))%12);
-  const days=Math.floor(ms/86400000);
+  // 함께한 날 - met_date 기준
+  const metDate=new Date((profile.met_date||profile.birthday)+"T00:00:00");
+  const daysTogether=Math.floor((now-metDate)/86400000);
   document.getElementById("pc-name").textContent=profile.name||"코코";
   const gm=profile.gender==="수컷"?"♂":"♀";
   document.getElementById("pc-breed").textContent="🇬🇧 "+(profile.breed||"브리티시 롱헤어")+" · "+(profile.gender||"암컷")+" "+gm;
   document.getElementById("coco-age").textContent=yrs+"살 "+mos+"개월";
-  document.getElementById("days-together").textContent=days.toLocaleString()+"일";
+  document.getElementById("days-together").textContent=daysTogether.toLocaleString()+"일";
   const wrap=document.getElementById("profile-photo-wrap");
   if(profile.photo_url){wrap.innerHTML=`<img class="profile-photo" src="${profile.photo_url}" alt="코코">`;}
   else{wrap.innerHTML=`<div class="profile-photo-placeholder">🐱</div>`;}
@@ -726,6 +729,7 @@ function openProfileEdit(){
   document.getElementById("p-name").value=profile.name||"";
   document.getElementById("p-breed").value=profile.breed||"";
   document.getElementById("p-birthday").value=profile.birthday||"";
+  document.getElementById("p-met-date").value=profile.met_date||"2025-12-26";
   document.getElementById("p-weight").value="";
   selGender(profile.gender||"암컷",document.getElementById(profile.gender==="수컷"?"g-male":"g-female"));
   const img=document.getElementById("profile-edit-img");
@@ -891,7 +895,7 @@ async function saveProfile(){
     photoUrl=pendingFile;
   }
   const weight=document.getElementById("p-weight").value;
-  const updates={id:1,name:document.getElementById("p-name").value.trim()||"코코",breed:document.getElementById("p-breed").value.trim()||"브리티시 롱헤어",gender:selectedGender,birthday:document.getElementById("p-birthday").value||"2022-01-01",photo_url:photoUrl,updated_at:new Date().toISOString()};
+  const updates={id:1,name:document.getElementById("p-name").value.trim()||"코코",breed:document.getElementById("p-breed").value.trim()||"브리티시 롱헤어",gender:selectedGender,birthday:document.getElementById("p-birthday").value||"2022-01-01",met_date:document.getElementById("p-met-date").value||"2025-12-26",photo_url:photoUrl,updated_at:new Date().toISOString()};
   const{error}=await sb.from("coco_profile").upsert(updates);
   if(error){showToast("저장 실패 😢 "+error.message);return;}
   profile={...updates};
