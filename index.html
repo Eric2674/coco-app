@@ -238,21 +238,35 @@
   <div class="tab-content" id="tab-album">
     <div class="section-header"><h2>📸 가족 앨범</h2><p>코코 사진을 올리고 함께 봐요</p></div>
     <div id="upload-progress" style="display:none" class="upload-progress">📤 저장 중... 잠시만요</div>
-    <div style="background:white;border-radius:18px;padding:20px;margin-bottom:20px;border:1px solid var(--border);box-shadow:0 2px 12px var(--shadow)">
-      <div style="background:#F0F9FF;border:1.5px solid #BAE6FD;border-radius:12px;padding:12px;margin-bottom:14px;font-size:12px;color:#0369A1;line-height:1.7">
-        📌 <strong>사진 올리는 법 (imgur.com 이용)</strong><br>
-        ① 폰에서 <strong>imgur.com</strong> 접속<br>
-        ② 오른쪽 상단 📷 → 갤러리에서 사진 선택 → 업로드<br>
-        ③ 업로드된 사진 길게 누르기 → <strong>"링크 복사"</strong><br>
-        ④ 아래 칸에 붙여넣기 후 <strong>올리기</strong> 버튼!
+
+    <!-- 파일 직접 선택 방식 -->
+    <div style="background:white;border-radius:18px;padding:20px;margin-bottom:16px;border:1px solid var(--border);box-shadow:0 2px 12px var(--shadow)">
+      <div style="font-size:13px;font-weight:800;color:var(--warm-brown);margin-bottom:12px">📷 갤러리에서 직접 선택</div>
+      <input type="file" accept="image/*" id="album-file-direct"
+        style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:15px;background:var(--cream);color:var(--warm-brown);cursor:pointer;margin-bottom:12px;display:block">
+      <div id="album-preview-wrap" style="display:none;margin-bottom:12px;text-align:center">
+        <img id="album-preview-img" src="" style="max-width:100%;max-height:200px;border-radius:12px;object-fit:cover">
+        <div style="font-size:12px;color:var(--coral);font-weight:700;margin-top:6px">✓ 사진 선택됨!</div>
       </div>
-      <input type="url" id="album-photo-url" class="form-input"
-        placeholder="https://i.imgur.com/..." style="margin-bottom:12px">
-      <button onclick="addPhotoByUrl()"
+      <input type="text" id="album-caption-direct" class="form-input" placeholder="한마디 (선택)" style="margin-bottom:12px">
+      <button onclick="uploadDirect()"
         style="width:100%;padding:16px;background:linear-gradient(135deg,#E8927C,#D4756A);color:white;border:none;border-radius:14px;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;cursor:pointer">
-        📸 이 사진 앨범에 추가하기
+        📸 앨범에 올리기
       </button>
     </div>
+
+    <!-- URL 방식 (백업) -->
+    <details style="margin-bottom:20px">
+      <summary style="font-size:13px;color:var(--warm-gray);font-weight:700;cursor:pointer;padding:10px 0">또는 이미지 URL로 올리기 ▼</summary>
+      <div style="background:white;border-radius:14px;padding:16px;margin-top:8px;border:1px solid var(--border)">
+        <input type="url" id="album-photo-url" class="form-input" placeholder="https://i.imgur.com/..." style="margin-bottom:10px">
+        <button onclick="addPhotoByUrl()"
+          style="width:100%;padding:14px;background:var(--coral);color:white;border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer">
+          URL로 추가하기
+        </button>
+      </div>
+    </details>
+
     <div class="album-grid" id="album-grid"><div class="loading" style="grid-column:1/-1">불러오는 중...</div></div>
   </div>
 
@@ -292,17 +306,20 @@
         <img id="profile-edit-img" src="" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
         <span id="profile-edit-placeholder" style="font-size:36px">📷</span>
       </div>
-      <div style="background:#F0F9FF;border:1.5px solid #BAE6FD;border-radius:12px;padding:12px;margin-bottom:10px;font-size:12px;color:#0369A1;text-align:left;line-height:1.6">
-        📌 <strong>사진 올리는 법:</strong><br>
-        ① <strong>imgur.com</strong> 접속 → New post → 사진 선택 → 업로드<br>
-        ② 사진 우클릭 → "이미지 주소 복사"<br>
-        ③ 아래 칸에 붙여넣기
-      </div>
-      <input type="url" id="profile-photo-url" class="form-input"
-        placeholder="https://i.imgur.com/..." style="margin-bottom:8px">
+      <!-- 직접 선택 방식 -->
+      <div style="font-size:12px;font-weight:700;color:var(--warm-gray);margin-bottom:6px;text-align:left">① 갤러리에서 선택</div>
+      <input type="file" accept="image/*" id="profile-file-direct"
+        style="width:100%;padding:12px;border:2px solid var(--border);border-radius:12px;font-size:14px;background:var(--cream);cursor:pointer;color:var(--warm-brown);margin-bottom:8px;display:block">
+      <button onclick="applyProfileDirect()"
+        style="width:100%;padding:12px;border:none;border-radius:12px;background:var(--coral);color:white;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;margin-bottom:14px">
+        🖼 선택한 사진 적용하기
+      </button>
+      <!-- URL 방식 -->
+      <div style="font-size:12px;font-weight:700;color:var(--warm-gray);margin-bottom:6px;text-align:left">② 또는 이미지 URL 입력</div>
+      <input type="url" id="profile-photo-url" class="form-input" placeholder="https://i.imgur.com/..." style="margin-bottom:8px">
       <button onclick="applyProfileUrl()"
-        style="width:100%;padding:12px;border:none;border-radius:12px;background:var(--coral);color:white;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer">
-        🖼 사진 적용하기
+        style="width:100%;padding:12px;border:none;border-radius:12px;background:#8BAE8A;color:white;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer">
+        🔗 URL로 적용하기
       </button>
       <div id="photo-selected-msg" style="font-size:12px;color:var(--coral);font-weight:700;display:none;margin-top:8px">✓ 사진 적용됨 - 저장하기를 눌러주세요</div>
     </div>
@@ -430,74 +447,17 @@ window.addEventListener("DOMContentLoaded",()=>{
     el.addEventListener("click",e=>{if(e.target===el)closeModals();});
   });
 
-  // ===== 파일 입력 핸들러 (Samsung Android 폴링 방식) =====
-  let _pollTimer=null;
-
-  function handleProfileFile(f){
-    pendingFile=f;
-    const url=URL.createObjectURL(f);
-    const img=document.getElementById("profile-edit-img");
-    if(img){img.src=url;img.style.display="block";}
-    const ph=document.getElementById("profile-edit-placeholder");
-    if(ph)ph.style.display="none";
-    const msg=document.getElementById("photo-selected-msg");
-    if(msg)msg.style.display="block";
-    showToast("사진 선택됨 ✓ 저장하기를 눌러주세요");
+  // 앨범 직접 선택 미리보기 (change 이벤트 - 이건 모달 밖이라 작동할 수도 있음)
+  const _albumDirect=document.getElementById("album-file-direct");
+  if(_albumDirect){
+    _albumDirect.onchange=function(){
+      if(!this.files||!this.files[0])return;
+      const url=URL.createObjectURL(this.files[0]);
+      const preview=document.getElementById("album-preview-img");
+      const wrap=document.getElementById("album-preview-wrap");
+      if(preview&&wrap){preview.src=url;wrap.style.display="block";}
+    };
   }
-
-  function handleAlbumFile(f){
-    pendingFile=f;
-    document.getElementById("caption-input").value="";
-    document.getElementById("caption-modal").classList.add("active");
-  }
-
-  function startPolling(profileInput,albumInput){
-    clearInterval(_pollTimer);
-    let count=0;
-    _pollTimer=setInterval(function(){
-      count++;
-      if(profileInput.files&&profileInput.files[0]){
-        clearInterval(_pollTimer);
-        handleProfileFile(profileInput.files[0]);
-        return;
-      }
-      if(albumInput.files&&albumInput.files[0]){
-        clearInterval(_pollTimer);
-        handleAlbumFile(albumInput.files[0]);
-        return;
-      }
-      if(count>150) clearInterval(_pollTimer); // 30초 후 포기
-    },200);
-  }
-
-  const _pi=document.getElementById("global-profile-input");
-  const _ai=document.getElementById("global-album-input");
-
-  // 클릭하면 폴링 시작
-  _pi.addEventListener("click",function(){startPolling(_pi,_ai);});
-  _ai.addEventListener("click",function(){startPolling(_pi,_ai);});
-
-  // change/input/focus 이벤트도 모두 병행
-  ["change","input"].forEach(function(ev){
-    _pi.addEventListener(ev,function(){if(_pi.files&&_pi.files[0])handleProfileFile(_pi.files[0]);});
-    _ai.addEventListener(ev,function(){if(_ai.files&&_ai.files[0])handleAlbumFile(_ai.files[0]);});
-  });
-  ["focus","pageshow"].forEach(function(ev){
-    window.addEventListener(ev,function(){
-      setTimeout(function(){
-        if(_pi.files&&_pi.files[0])handleProfileFile(_pi.files[0]);
-        if(_ai.files&&_ai.files[0])handleAlbumFile(_ai.files[0]);
-      },400);
-    });
-  });
-  document.addEventListener("visibilitychange",function(){
-    if(document.visibilityState==="visible"){
-      setTimeout(function(){
-        if(_pi.files&&_pi.files[0])handleProfileFile(_pi.files[0]);
-        if(_ai.files&&_ai.files[0])handleAlbumFile(_ai.files[0]);
-      },400);
-    }
-  });
 });
 
 function startApp(){
@@ -725,7 +685,44 @@ async function openAlbumPicker(){
   if(input)input.click();
 }
 
-function applyProfileUrl(){
+// ===== 직접 파일 읽기 (버튼 클릭 시점에 읽음) =====
+function applyProfileDirect(){
+  const input=document.getElementById("profile-file-direct");
+  if(!input||!input.files||input.files.length===0){
+    showToast("먼저 위에서 파일을 선택해주세요 👆");return;
+  }
+  const file=input.files[0];
+  pendingFile=file;
+  const url=URL.createObjectURL(file);
+  const img=document.getElementById("profile-edit-img");
+  img.src=url;img.style.display="block";
+  const ph=document.getElementById("profile-edit-placeholder");
+  if(ph)ph.style.display="none";
+  const msg=document.getElementById("photo-selected-msg");
+  if(msg)msg.style.display="block";
+  showToast("사진 적용됨 ✓ 저장하기를 눌러주세요");
+}
+
+async function uploadDirect(){
+  const input=document.getElementById("album-file-direct");
+  if(!input||!input.files||input.files.length===0){
+    showToast("먼저 위에서 파일을 선택해주세요 👆");return;
+  }
+  const file=input.files[0];
+  const caption=document.getElementById("album-caption-direct").value.trim();
+  document.getElementById("upload-progress").style.display="block";
+  const photoData=await fileToBase64(file);
+  const{error}=await sb.from("coco_album").insert({photo_url:photoData,caption:caption||null,uploaded_by:currentUser});
+  document.getElementById("upload-progress").style.display="none";
+  if(error){showToast("저장 실패 😢 "+error.message);return;}
+  // 미리보기 초기화
+  document.getElementById("album-preview-wrap").style.display="none";
+  document.getElementById("album-caption-direct").value="";
+  input.value="";
+  showToast("📸 앨범에 추가됐어요!");
+  await loadAlbum();
+}
+
   const url=document.getElementById("profile-photo-url").value.trim();
   if(!url){showToast("URL을 입력해주세요");return;}
   if(!url.startsWith("http")){showToast("올바른 URL을 입력해주세요");return;}
