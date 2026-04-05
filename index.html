@@ -771,10 +771,11 @@ async function uploadDirect(){
   await loadAlbum();
 }
 
+function applyProfileUrl(){
   const url=document.getElementById("profile-photo-url").value.trim();
   if(!url){showToast("URL을 입력해주세요");return;}
   if(!url.startsWith("http")){showToast("올바른 URL을 입력해주세요");return;}
-  pendingFile=url; // URL 문자열로 저장
+  pendingFile=url;
   const img=document.getElementById("profile-edit-img");
   img.src=url;img.style.display="block";
   document.getElementById("profile-edit-placeholder").style.display="none";
