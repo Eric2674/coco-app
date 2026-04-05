@@ -753,20 +753,19 @@ async function uploadDirect(){
   prog.style.display="block";
   prog.textContent="📤 사진 압축 중...";
   try{
-    let photoData;
-    try{
-      photoData=await compressImage(file,800,0.75);
-    }catch(e){
-      photoData=await fileToBase64(file);
-    }
+    // 600px, 60% 품질로 강하게 압축
+    const photoData=await compressImage(file,600,0.6);
     prog.textContent="📤 저장 중...";
-    const{error}=await sb.from("coco_album").insert({
+    const{data,error}=await sb.from("coco_album").insert({
       photo_url:photoData,
       caption:caption||null,
       uploaded_by:currentUser
     });
     prog.style.display="none";
-    if(error){showToast("저장 실패 😢 "+error.message);return;}
+    if(error){
+      showToast("저장 실패: "+(error.message||error.code||JSON.stringify(error)));
+      return;
+    }
     document.getElementById("album-preview-wrap").style.display="none";
     document.getElementById("album-caption-direct").value="";
     input.value="";
@@ -774,7 +773,8 @@ async function uploadDirect(){
     await loadAlbum();
   }catch(e){
     prog.style.display="none";
-    showToast("오류: "+e.message);
+    showToast("오류: "+(e&&e.message?e.message:String(e)));
+    console.error("uploadDirect error:",e);
   }
 }
 
@@ -872,18 +872,20 @@ async function saveProfile(){
 function compressImage(file, maxSize, quality){
   return new Promise((resolve,reject)=>{
     const reader=new FileReader();
-    reader.onerror=reject;
+    reader.onerror=()=>reject(new Error("파일 읽기 실패"));
     reader.onload=function(e){
       const img=new Image();
-      img.onerror=reject;
+      img.onerror=()=>reject(new Error("이미지 로드 실패"));
       img.onload=function(){
-        const canvas=document.createElement("canvas");
-        let w=img.width, h=img.height;
-        if(w>h){if(w>maxSize){h=Math.round(h*maxSize/w);w=maxSize;}}
-        else{if(h>maxSize){w=Math.round(w*maxSize/h);h=maxSize;}}
-        canvas.width=w; canvas.height=h;
-        canvas.getContext("2d").drawImage(img,0,0,w,h);
-        resolve(canvas.toDataURL("image/jpeg",quality));
+        try{
+          const canvas=document.createElement("canvas");
+          let w=img.width, h=img.height;
+          if(w>h){if(w>maxSize){h=Math.round(h*maxSize/w);w=maxSize;}}
+          else{if(h>maxSize){w=Math.round(w*maxSize/h);h=maxSize;}}
+          canvas.width=w; canvas.height=h;
+          canvas.getContext("2d").drawImage(img,0,0,w,h);
+          resolve(canvas.toDataURL("image/jpeg",quality));
+        }catch(err){reject(err);}
       };
       img.src=e.target.result;
     };
