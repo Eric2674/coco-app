@@ -406,6 +406,12 @@
   <div class="pv-info"><div class="pv-name" id="pv-name"></div><div class="pv-caption" id="pv-caption"></div></div>
 </div>
 
+<!-- 건강 상세 모달 -->
+<div class="modal-overlay" id="health-detail-modal">
+  <div class="modal">
+  </div>
+</div>
+
 <!-- 이름 변경 모달 -->
 <div class="modal-overlay" id="name-modal">
   <div class="modal">
@@ -676,7 +682,47 @@ function renderEvents(){document.getElementById("event-list").innerHTML=events.l
 function renderHealth(){
   const cls={좋음:"status-good",보통:"status-ok",나쁨:"status-bad"};
   document.getElementById("health-list").innerHTML=healthLogs.length===0?E("🩺","건강 기록을 추가해보세요"):
-    healthLogs.slice(0,15).map(h=>`<div class="health-item"><div class="health-date">${h.recorded_date}</div><div class="health-weight">${h.weight?h.weight+"kg":"-"}</div><span class="status-badge ${cls[h.health_status]||"status-good"}">${h.health_status||"좋음"}</span><div style="flex:1;margin-left:8px;font-size:12px;color:var(--warm-gray);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h.notes||""}</div><button class="icon-btn" onclick="delHealth('${h.id}')">🗑</button></div>`).join("");
+    healthLogs.slice(0,15).map(h=>`
+    <div class="health-item" onclick="showHealthDetail('${h.recorded_date}','${h.weight||""}','${h.health_status||"좋음"}','${(h.notes||"").replace(/'/g,"\\'")}','${h.recorded_by||""}')" style="cursor:pointer">
+      <div class="health-date">${h.recorded_date}</div>
+      <div class="health-weight">${h.weight?h.weight+"kg":"-"}</div>
+      <span class="status-badge ${cls[h.health_status]||"status-good"}">${h.health_status||"좋음"}</span>
+      <div style="flex:1;margin-left:8px;font-size:12px;color:var(--warm-gray);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h.notes||"메모 없음"}</div>
+      <div style="font-size:18px;color:var(--warm-gray)">›</div>
+    </div>`).join("");
+}
+
+function showHealthDetail(date,weight,status,notes,by){
+  const cls={좋음:"status-good",보통:"status-ok",나쁨:"status-bad"};
+  const content=`
+    <div class="modal-handle"></div>
+    <div class="modal-title">❤️ 건강 기록 상세</div>
+    <div style="background:var(--cream);border-radius:16px;padding:20px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div style="font-size:13px;color:var(--warm-gray);font-weight:700">📅 날짜</div>
+        <div style="font-size:15px;font-weight:800">${date}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div style="font-size:13px;color:var(--warm-gray);font-weight:700">⚖️ 몸무게</div>
+        <div style="font-size:20px;font-weight:900;color:var(--coral)">${weight?weight+"kg":"미입력"}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div style="font-size:13px;color:var(--warm-gray);font-weight:700">💊 건강 상태</div>
+        <span class="status-badge ${cls[status]||"status-good"}">${status}</span>
+      </div>
+      ${by?`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div style="font-size:13px;color:var(--warm-gray);font-weight:700">👤 기록자</div>
+        <div style="font-size:14px;font-weight:700">${by}</div>
+      </div>`:""}
+      <div style="margin-top:4px">
+        <div style="font-size:13px;color:var(--warm-gray);font-weight:700;margin-bottom:8px">📝 메모</div>
+        <div style="font-size:15px;font-weight:600;line-height:1.6;color:var(--warm-brown);background:white;border-radius:12px;padding:14px;min-height:60px">${notes||"메모 없음"}</div>
+      </div>
+    </div>
+    <button class="submit-btn" onclick="closeModals()">확인</button>
+  `;
+  document.getElementById("health-detail-modal").querySelector(".modal").innerHTML=content;
+  document.getElementById("health-detail-modal").classList.add("active");
 }
 
 function renderAlbum(){
